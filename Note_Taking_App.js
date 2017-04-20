@@ -1,5 +1,3 @@
-console.log(" Type the following numbers to perform corresponding actions: \n1)To Create a note\n2)To View a single note.\n3)To Delete a single note\n4)To View a list of all the notes taken\n5)To Search notes ");
-
 var readline = require('readline');
 
 //////////////////////////////////////////////
@@ -17,43 +15,53 @@ var firebase = require("firebase");
   ////////////////////////////////////////////////////////
 
 var rl = readline.createInterface(process.stdin, process.stdout);
-
-rl.question("Type Your Response:  ", function(answer){
-
-	switch(answer) {
-	    case '1':
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+function continueExitLoop(){
+	rl.question('Do you wish to go back to the main menu? (y/n) : ', function(answer){
+		if (answer == 'y'){
+			mainMenu();
+		}else if (answer == 'n'){
+			process.exit();
+		}else{
+			console.log('incorrect input, pls type y for yes or n for no');
+			continueExitLoop();
+		}
+	});
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////
+function mainMenu(){
+	console.log("Type the following numbers to perform corresponding actions: \n[1)] To Create a note\n[2] To View a single note.\n[3]To Delete a single note\n[4] To View a list of all the notes taken\n[5] To Search notes");
+	rl.question("Type Your Response:  ", function(answer){
+		if (answer == '1'){
 	        console.log("Create a note");
 	        CreateNote();
-	        break;
-	    case '2':
+	    }else if (answer == '2'){
 	        console.log("View a single note");
 	        ViewNote();
-	        break;
-	    case '3':
+	    }else if (answer == '3'){
 	        console.log("Delete a single note");
 	        DeleteNote();
-	        break;
-	    case '4':
+	    }else if (answer == '4'){
 	        console.log("View a list of all the notes taken");
 	        ListOfNotesTaken();
-	        break;
-	    case '5':
+	    }else if (answer == '5'){
 	        console.log("Search notes");
 	        SearchNote();
-	        break;
-	    default:
-	        console.log("Input not recognized");
-	}
-});
+	    }else{
+		    console.log("Input not recognized");
+		}
+	});
+	
+};
 /////////////////////////////////////////////////////////////////////////
 function CreateNote(){
 	rl.question('Please enter the Title : ', (noteTitle) => {
 	    rl.question('Please type the Body : ', (noteBody) => {
 	    	var database = firebase.database().ref();
 			database.child(noteTitle).set(noteBody);
-			
+			continueExitLoop();
+		//rl.close();
 	    });
-	    rl.close();
 	});
 };
 ////////////////////////////////////////////////////////////////////////////
@@ -63,7 +71,8 @@ function ViewNote(){
 	noteBody.on('value', function(datasnapshot){
 	noteBody = datasnapshot.val();
 	console.log(noteBody);
-	rl.close();
+	continueExitLoop();
+	//rl.close();
 });
 });
 };
@@ -74,8 +83,8 @@ function DeleteNote(){
 	noteBody.on('value', function(datasnapshot){
 		});
 	noteBody.remove();
-	//console.log(noteBody);
-	rl.close();
+	continueExitLoop();
+	//rl.close();
 });
 };
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -96,7 +105,8 @@ function ListOfNotesTaken(){
 				console.log(keyList[i] + '\n' + valueList[i]);
 			}	
 		});
-		rl.close();
+		continueExitLoop();
+		//rl.close();
 	});
 };
 
@@ -120,9 +130,13 @@ function SearchNote(){
 				for (var i = 0; i < parseInt(noOfFindings); i += 1){
 					console.log(keyList[i] + '\n' + valueList[i]);
 				}
+				continueExitLoop();
+			//rl.close();
 			});
 		});
-		rl.close();
 	});
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////
+mainMenu();
+//continueExitLoop()

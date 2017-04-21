@@ -1,8 +1,6 @@
-var readline = require('readline');
-
-//////////////////////////////////////////////
+/* From Firebase website, generated after registration */
+//var readline = require('readline');
 var firebase = require("firebase");
-// Initialize Firebase
   var config = {
     apiKey: "AIzaSyBIoHuV4kqJUG7vZalo6s9uodRUHpfjdWo",
     authDomain: "note-taking-application-605e8.firebaseapp.com",
@@ -12,131 +10,159 @@ var firebase = require("firebase");
     messagingSenderId: "329355161103"
   };
   firebase.initializeApp(config);
-  ////////////////////////////////////////////////////////
+ //var rl = readline.createInterface(process.stdin, process.stdout);
 
-var rl = readline.createInterface(process.stdin, process.stdout);
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-function continueExitLoop(){
-	rl.question('Do you wish to go back to the main menu? (y/n) : ', function(answer){
-		if (answer == 'y'){
-			mainMenu();
-		}else if (answer == 'n'){
-			process.exit();
-		}else{
-			console.log('incorrect input, pls type y for yes or n for no');
-			continueExitLoop();
+/* Passing argument through cmd */ 
+
+var processData = process.argv.slice(2);
+var args = [];
+processData.forEach (function(value){
+	args.push(value);
+});
+
+//console.log(args[1],args[2]);
+
+/* Catching the various first arguments */
+function main(){
+	switch (args[0])
+	{
+		case 'createnote':
+			CreateNote(args[1],args[2]);
+			break;
+		case 'viewnote':
+			ViewNote(args[1]);
+			break;
+		case 'deletenote':
+			DeleteNote(args[1]);
+			break;
+		case 'listnotes':
+			ListNote(args[1]);
+			break;
+		case 'searchnotes':
+			SearchNotes(args[1],args[2]);
+			break;
+		default:
+			console.log('Command not recognized, pls try again');
+	};
+};
+
+/* Creating function */
+function CreateNote (note_title, note_content){
+	var test = false;
+	var d = new Date();
+	var date = d.toUTCString();
+	var ts = d.getTime();
+	//var database = firebase.database().ref();
+	var childdata = [];
+	firebase.database().ref().on('value', function(snapshot){
+		snapshot.forEach(function(childSnapshot){
+			childdata.push(childSnapshot.val());
+		});
+		var titleList = [];
+		for (var item of childdata){
+			titleList.push(item.Title);
+		};
+		for (var k = 0; k < titleList.length; k += 1){
+			//console.log(titleList[k]);
+			if (titleList[k].toLowerCase() === note_title.toLowerCase()) {
+				test = true;
+				break;
+		  	}
+		}	
+	});
+/////////////////////////////////////////////////////////////////////////////////
+		if (test === false){
+			firebase.database().ref().push({Title:note_title, Body:note_content, Time:ts, Date:date});//creates database..... Time:ts,
+			var generated_id = firebase.database().ref().child('posts').push().key;//gets the generated id
+			console.log('\n\nTitle:   '+ note_title + '\n' +'Id:   '+ generated_id + '\n' +'Date:   '+date + '\n' +'Note Content:   '+ note_content);
+		} else {
+			console.log('Title: "'+note_title+'" already exits, please change title and try again!!!');
 		}
-	});
-}
-////////////////////////////////////////////////////////////////////////////////////////////////////
-function mainMenu(){
-	console.log("Type the following numbers to perform corresponding actions: \n[1)] To Create a note\n[2] To View a single note.\n[3]To Delete a single note\n[4] To View a list of all the notes taken\n[5] To Search notes");
-	rl.question("Type Your Response:  ", function(answer){
-		if (answer == '1'){
-	        console.log("Create a note");
-	        CreateNote();
-	    }else if (answer == '2'){
-	        console.log("View a single note");
-	        ViewNote();
-	    }else if (answer == '3'){
-	        console.log("Delete a single note");
-	        DeleteNote();
-	    }else if (answer == '4'){
-	        console.log("View a list of all the notes taken");
-	        ListOfNotesTaken();
-	    }else if (answer == '5'){
-	        console.log("Search notes");
-	        SearchNote();
-	    }else{
-		    console.log("Input not recognized");
-		}
-	});
-	
 };
-/////////////////////////////////////////////////////////////////////////
-function CreateNote(){
-	rl.question('Please enter the Title : ', (noteTitle) => {
-	    rl.question('Please type the Body : ', (noteBody) => {
-	    	var database = firebase.database().ref();
-			database.child(noteTitle).set(noteBody);
-			continueExitLoop();
-		//rl.close();
-	    });
-	});
-};
-////////////////////////////////////////////////////////////////////////////
-function ViewNote(){
-	rl.question('View by Title : ', function(noteTitle){
-	var noteBody = firebase.database().ref().child(noteTitle);
+
+/* Viewing function */
+function ViewNote(note_id){
+	var noteBody = firebase.database().ref().child(note_id);
 	noteBody.on('value', function(datasnapshot){
-	noteBody = datasnapshot.val();
-	console.log(noteBody);
-	continueExitLoop();
-	//rl.close();
-});
-});
-};
-//////////////////////////////////////////////////////////////////////////////
-function DeleteNote(){
-	rl.question('View by Title : ', function(noteTitle){
-	var noteBody = firebase.database().ref().child(noteTitle);
-	noteBody.on('value', function(datasnapshot){
-		});
-	noteBody.remove();
-	continueExitLoop();
-	//rl.close();
-});
-};
-////////////////////////////////////////////////////////////////////////////////////////
-function ListOfNotesTaken(){
-	rl.question("How many most recent Notes do You wish to list?   ", function(answer){
-		console.log('recentPosts');
-		var database = firebase.database().ref();
-		database.on('value', function(datasnapshot){
-			database = datasnapshot.val();
-			keyList = [];
-			valueList = [];
-			for(keys in database){
-				keyList.push(keys);
-				values = database[keys];
-				valueList.push(values);
-			};
-			for (var i = 0; i < parseInt(answer); i += 1){
-				console.log(keyList[i] + '\n' + valueList[i]);
-			}	
-		});
-		continueExitLoop();
-		//rl.close();
+		noteBody = datasnapshot.val();
+		console.log('\n\nTitle:   '+noteBody.Title +'\n'+ 'Date:   '+noteBody.Date +'\n'+ 'Body:   '+noteBody.Body);
 	});
 };
 
-/////////////////////////////////////////////////////////////////////////////////////////////
-function SearchNote(){
-	rl.question('Which word do You want to search for? : ', (word) => {
-	    rl.question('How many note findings do you want to see? : ', (noOfFindings) => {
-			var database = firebase.database().ref();
-			database.on('value', function(datasnapshot){
-				database = datasnapshot.val();
-				keyList = [];
-				valueList = [];
-				for(keys in database){
-					var n = database[keys].search(new RegExp(word, "i"));
-					if (n != -1){
-						keyList.push(keys);
-						values = database[keys];
-						valueList.push(values);
-					};
-				};
-				for (var i = 0; i < parseInt(noOfFindings); i += 1){
-					console.log(keyList[i] + '\n' + valueList[i]);
-				}
-				continueExitLoop();
-			//rl.close();
-			});
+/* Deleting function */
+function DeleteNote(note_id){
+	try {
+		var Database = firebase.database().ref().child(note_id).remove();
+		console.log('\n\nNote with id:   "' +note_id+ '"   has been deleted.')
+	}
+	catch(err) {
+		console.log(err.name);
+	}
+};
+
+/* List notes function */
+function ListNote(limit){
+	var childkey = [];
+	var childdata = [];
+	firebase.database().ref().orderByChild('Time').on('value', function(snapshot){ /*limitToLast(limit).*/
+		snapshot.forEach(function(childSnapshot){
+			childkey.push(childSnapshot.key);
+			 childdata.push(childSnapshot.val());
 		});
+		//console.log(childdata);
+		var bodyList = []; var dateList = []; var titleList = [];
+		for (var item of childdata){
+			bodyList.push(item.Body);
+			dateList.push(item.Date);
+			titleList.push(item.Title);
+		};var i = 0;
+		while (i <= Math.floor(titleList.length/limit)){
+			  limitedBodyList = bodyList.splice(0, limit);
+			  limitedDateList = dateList.splice(0, limit);
+			  limitedTitleList = titleList.splice(0, limit);
+			  for (var i=0; i < limitedBodyList.length; i += 1){
+			  	console.log('\n\nTitle:   '+limitedTitleList[i] +'\n'+ 'Date:   '+limitedDateList[i] +'\n'+ 'Body:   '+limitedBodyList[i]);
+			  	continue;
+			  }
+			  if (titleList.length === 0){
+			    break;
+			  };
+			};//////
 	});
 };
 
-////////////////////////////////////////////////////////////////////////////////////////////
-mainMenu();
-//continueExitLoop()
+function SearchNotes(query_string, limit){
+	/*copied from list note*/
+	var childkey = [];
+	var childdata = [];
+	firebase.database().ref().orderByChild('Time').on('value', function(snapshot){ /*limitToLast(limit).*/
+		snapshot.forEach(function(childSnapshot){
+			childkey.push(childSnapshot.key);
+			 childdata.push(childSnapshot.val());
+		});
+	var bodyList = []; var dateList = []; var titleList = [];
+	for (var item of childdata){
+		bodyList.push(item.Body);
+		dateList.push(item.Date);
+		titleList.push(item.Title);
+	};/*copy ends here*/
+	var foundTitleList = [];
+	var founddateList = [];
+	var foundBodyList = [];
+	for(var j = 0; j < bodyList.length; j += 1){
+		var n = bodyList[j].search(new RegExp(query_string, "i"));
+		//console.log(n);
+		if (n != -1){
+			foundTitleList.push(titleList[j]);
+			founddateList.push(dateList[j])
+			foundBody = bodyList[j];
+			foundBody = foundBody.replace(query_string,'*'+query_string+'*');
+			foundBodyList.push(foundBody);
+		};
+	};//console.log(foundTitleList);
+	for (var i = 0; i < parseInt(limit); i += 1){
+		console.log('\n\nTitle:   '+foundTitleList[i] +'\n'+ 'Date:   '+founddateList[i] +'\n'+ 'Body:   '+foundBodyList[i]);
+	}
+});
+};//
+main();

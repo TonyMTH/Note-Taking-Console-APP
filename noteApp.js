@@ -1,5 +1,6 @@
 /* From Firebase website, generated after registration */
 //var readline = require('readline');
+var chalk = require('chalk');
 var readline = require('readline');
 var firebase = require("firebase");
   var config = {
@@ -43,7 +44,7 @@ function main(){
 			SearchNotes(args[1],args[2]);
 			break;
 		default:
-			console.log('Command not recognized, pls try again');
+			console.log(chalk.red.bold('Input not recognized'));
 	};
 };
 
@@ -68,7 +69,7 @@ function CreateNote (note_title, note_content){
 			var generated_id = firebase.database().ref().child('posts').push().key;//gets the generated id
 			console.log('\n\nTitle:   '+ note_title + '\n' +'Id:   '+ generated_id + '\n' +'Date:   '+date + '\n' +'Note Content:   '+ note_content);
 		}else{
-			console.log('Title: "'+note_title+'" already exits, please change title and try again!!!');
+			console.log(chalk.red.bold('Title: "'+note_title+'" already exits, please change title and try again!!!'));
 		};
 	});
 };
@@ -95,7 +96,8 @@ function DeleteNote(note_id){
 
 /* List notes function */
 function ListNote(limit){
-	var childkey = [], childdata = [], bodyList = [], dateList = [], titleList = [];
+	var childkey = [], childdata = [], bodyList = [], dateList = [], titleList = [],i = 0;
+	var lisDateList = [], lisBodyList = [],lisTitleList = [];
 	firebase.database().ref().orderByChild('Time').on('value', function(snapshot){ /*limitToLast(limit).*/
 		snapshot.forEach(function(childSnapshot){
 			childkey.push(childSnapshot.key);
@@ -105,18 +107,17 @@ function ListNote(limit){
 			bodyList.push(item.Body);
 			dateList.push(item.Date);
 			titleList.push(item.Title);
-		};console.log(titleList);
-		for (var ii = 0; ii < Math.floor(titleList.length/limit); ii +=1){
-			for (var i = 0; i < parseInt(limit); i += 1){
-				console.log('\n\nTitle:   '+titleList[i] +'\n'+ 'Date:   '+dateList[i] +'\n'+ 'Body:   '+bodyList[i]);
-			};
-			titleList.splice(0, limit); dateList.splice(0, limit); bodyList.splice(0, limit);
-			rl.question("Enter next to view more notes:   ", function(answer){
-			if (answer !== 'next'){
-				process.exit();
-			};
-		});
 		};
+		for (var jj=0;jj<dateList.length;jj+=1){
+			lisDateList.push(dateList.splice(jj,limit));
+			lisBodyList.push(bodyList.splice(jj,limit));
+			lisTitleList.push(titleList.splice(jj,limit));
+		};//console.log(lisTitleList);
+		for (var j = 0; i < parseInt(limit); i += 1){
+			display = '\nTitle:   '+titleList[i] +'\n'+ 'Date:   '+dateList[i] +'\n'+ 'Body:   '+bodyList[i]+ '\n';
+			console.log(display);
+		};
+		nextPrev(titleList, limit, i, lisTitleList, lisDateList, lisBodyList);
 	});
 };
 
@@ -141,7 +142,7 @@ function SearchNotes(query_string, limit){
 			foundTitleList.push(titleList[j]);
 			founddateList.push(dateList[j])
 			foundBody = bodyList[j];
-			foundBody = foundBody.replace(query_string,'*'+ query_string +'*');
+			foundBody = foundBody.replace(new RegExp(query_string, "i"),chalk.red.underline.bold(query_string));
 			foundBodyList.push(foundBody);
 		};
 	};
@@ -159,11 +160,32 @@ function SearchNotes(query_string, limit){
 		});
 	};
 	if (foundBodyList.length === 0){
-		console.log('"'+query_string+'" not found, pls try another search!!');
+		console.log(chalk.red.bold('"'+query_string+'" not found, pls try another search!!'));
 	};//console.log(founddateList);
 });
 };
 
+/* This line makes the next invoke to function*/
+function nextPrev(titleList, limit,i,titleList,dateList,bodyList){
+	rl.question('Enter "next" to scroll to next page, "prev" for the previous view, or "any other key" to exit :', (answer) => {
+		if (answer == 'next'){
+			i += 1;
+		}
+		if (answer == 'prev'){
+			i -= 1;
+		}
+		if (answer != 'next' && answer != 'prev'){
+			process.exit();
+		}
+		for (var d = i; d < parseInt(limit); d += 1){
+			console.log('\nTitle:   '+lisTitleList[d] +'\n'+ 'Date:   '+lisDateList[d] +'\n'+ 'Body:   '+lisBodyList[d]+ '\n');
+		}
+		if (d < Math.floor(titleList.length/limit)){
+			nextPrev(titleList, limit,i,lisTitleList,lisDateList,lisBodyList);
+		}
+	});
+	
+}
 
 
 main();
